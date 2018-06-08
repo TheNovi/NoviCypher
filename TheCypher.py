@@ -1,13 +1,8 @@
 from random import shuffle, sample
 
+supported_characters = ''.join(chr(x) for x in range(33, 127))
+max_length = len(supported_characters)  # !!!!! MAX 94 CHAR !!!!!
 
-#  !!!!! MAX 94 CHAR !!!!!
-
-'''
-for x in range(126 - 33):
-	print(f"{x}: '{chr(x+32)}'")
-ord("a")
-'''
 
 def print_table(cypher2d):
 	for row in cypher2d:
@@ -16,9 +11,12 @@ def print_table(cypher2d):
 		print("")
 
 
-def decrypt(cypher2d):  # todo more rows
-	out = list(zip(cypher2d[0], cypher2d[1]))
-	out.sort()
+def decrypt(cypher):
+	out = cypher
+	for i in range(len(cypher)-1):
+		out = list(zip(cypher[i], cypher[i+1]))
+		out.sort()
+		cypher[i+1] = [x[1] for x in out]
 	return ''.join([x[1] for x in out])
 
 
@@ -33,6 +31,6 @@ def smart_encrypt(text, rows=1):
 	out = [[x for x in text]]
 	for _ in range(rows):
 		cypher = __encrypt__(out[-1])
-		out[-1] = cypher[0]
-		out.append(cypher[1])
-	return out
+		out[-1] = cypher[1]
+		out.append(cypher[0])
+	return list(reversed(out))
