@@ -1,7 +1,7 @@
 from random import shuffle, sample
 
-supported_characters = ''.join(chr(x) for x in range(33, 127))
-max_length = len(supported_characters)  # !!!!! MAX 94 CHAR !!!!!
+supported_ascii_characters = ''.join(chr(x) for x in range(33, 127))
+max_ascii_length = len(supported_ascii_characters)  # !!!!! MAX 94 CHAR !!!!!
 
 
 def print_table(arr):
@@ -19,7 +19,7 @@ def decrypt(cypher, force_ascii=False):
 		out = list(zip(cypher[i], cypher[i+1]))
 		out.sort()
 		cypher[i+1] = [x[1] for x in out]
-	if force_ascii or len(out) > max_length:
+	if force_ascii or len(out) > max_ascii_length:
 		return ''.join([chr(x[1]) for x in out])
 	return ''.join([str(x[1]) for x in out])
 
