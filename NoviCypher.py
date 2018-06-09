@@ -12,13 +12,14 @@ def print_table(arr):
 		print("")
 
 
-def decrypt(cypher):
+def decrypt(cypher, force_ascii=False):
+	cypher = cypher[:]
 	out = cypher
 	for i in range(len(cypher)-1):
 		out = list(zip(cypher[i], cypher[i+1]))
 		out.sort()
 		cypher[i+1] = [x[1] for x in out]
-	if len(out) > max_length:
+	if force_ascii or len(out) > max_length:
 		return ''.join([chr(x[1]) for x in out])
 	return ''.join([str(x[1]) for x in out])
 
@@ -37,10 +38,10 @@ def __encrypt_numbers__(text):
 	return out
 
 
-def smart_encrypt(text, rows=1):
+def smart_encrypt(text, rows=1, force_numbers=False):
 	out = [[str(x) for x in text]]
 	en = __encrypt_ascii__
-	if len(text) > 94:
+	if force_numbers or len(text) > 94:
 		en = __encrypt_numbers__
 		out[0] = [ord(x) for x in out[0]]
 	for _ in range(rows):
