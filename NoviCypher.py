@@ -3,136 +3,130 @@ from shutil import make_archive, unpack_archive, rmtree, move
 from os import remove, path, makedirs
 
 
-class FileCypher:
-	def __init__(self, folder, rows=199, chunk=2**15):
-		print('start')
-		if len(folder) == 0:
+class FileCypher:  # todo automatic chunk size
+	def __init__(self, folder, rows=2, output_name='o', chunk=2**15):
+		print('Starting encoding')
+		rows -= 1
+		if rows < 1:
+			print("Minimum rows is 2")
+			return
+		if not path.exists(folder):
+			print("Folder doesn't exist")
 			return
 		self.folder = folder
-		make_archive(folder, 'zip', folder)
+		print('Ziping for cypher')
+		make_archive('Copy', 'zip', folder)
 		print('Loading file')
 		a = self.__first__(chunk)
-		print('Ziping for cypher')
-		self.check = a
 		print(f'Cypher is {len(a)}')
 		a = [x for x in zip(range(len(a)), a)]
 		shuffle(a)
-		print('Second')
 		self.ncy = self.__second__(a)
 		print('Adding rows')
 		if rows > 0:
 			self.ncy.add_lines(rows)
 
 		print('Saving')
-		self.save_and_zip()
+		self.save_and_zip(output_name)
 		print('Done\n')
 
-	def save_and_zip(self):
-		cy = self.ncy.get_cypher()
-		# print(len(cy.split('\n')))
-		with open(f'{self.folder}-copy/cy', 'w') as f:
-			f.write(cy)
-		make_archive(f'{self.folder}', 'zip', f'{self.folder}-copy')
+	def save_and_zip(self, o):
+		with open(f'Temp/cy', 'w') as f:
+			f.write(self.ncy.get_cypher())
+		make_archive(f'Copy', 'zip', f'Temp')
 		try:
-			rmtree(f'{self.folder}-copy')
+			rmtree(f'Temp')
 		except:
-			print(f"Can't delete {self.folder}-copy folder")
-		move(f'{self.folder}.zip', f'{self.folder}.ncy')
+			print(f"Can't delete Temp folder")
+		if self.folder[-1] not in ['/', '\\']:
+			self.folder += '/'
+		move(f'Copy.zip', f'{self.folder}../{o}.ncy')
+		print('Saved to ' + path.abspath(f'{self.folder}../{o}.ncy'))
 
-	# noinspection PyTypeChecker
-	def decrypt_file(self, folder):
+	@staticmethod
+	def decrypt_file(folder):
+		print('Starting decoding')
+		if not path.exists(f'{folder}.ncy'):
+			print("Cant find .ncy file")
+			return
 		print('Unpacking')
-		unpack_archive(f'{folder}.ncy', folder+'-copy', 'zip')
+		unpack_archive(f'{folder}.ncy', 'Temp', 'zip')
 		a = []
-		self.folder = folder
+		# self.folder = folder
 		print('Reading cy')
-		with open(f'{folder}-copy/cy', 'r') as f:
-			l = [x.replace('\n', '') for x in f.readlines()]
+		with open('Temp/cy', 'r') as f:
+			l = [x.replace('\n', '').split(' ') for x in f.readlines()]
 		for x in l:
-			a.append([int(y) for y in x.split(' ')])
+			a.append([int(y) for y in x])
 		print('Deciphering cy')
-		a = Cypher.decrypt_file(a, False, True)
+		a = [int(x) for x in Cypher(a).decrypt(True)]
 		print('Reading e')
-		a = [[int(x) for x in a], self.read_file()]
+		with open('Temp/e', 'r') as f:
+			l = [x.replace('\n', '') for x in f.readlines()]
+		a = [a, l]
 		print('Deciphering e')
-		# When i tried to give this to Cypher class to decipher. For some reason it just cant successfully copy one
-		# (also fuck this line length limit) variable. I just copied whole decipher method here. FUCK THIS SHIT
-		cypher = a
-		out = cypher
-		for i in range(len(cypher) - 1):
-			out = list(zip(cypher[i], cypher[i + 1]))
-			out.sort()
-			cypher[i + 1] = [x[1] for x in out]
-		a = [bytes.fromhex(x[1]) for x in out]
-		print('Crating deciphered zip')
-		self.get_file(b''.join(a))
+		a = [bytes.fromhex(x) for x in Cypher(a).decrypt(True)]
+		print('Creating deciphered zip')
+		with open('Copy.zip', 'wb') as f:
+			f.write(b''.join(a))
 		print('Removing temp files and unpacking')
 		try:
-			rmtree(f'{self.folder}-copy')
+			rmtree('Temp')
 		except:
-			print(f"Can't delete {self.folder}-copy folder")
-		unpack_archive(f'{folder}-copy.zip', folder + '-decrypted', 'zip')
-		remove(f'{folder}-copy.zip')
+			print("Can't delete Temp folder")
+		unpack_archive('Copy.zip', folder + '-dec', 'zip')
+		remove('Copy.zip')
 		print("Done (Don't forget to clear your trash bin after deleting deciphered folder)")
 
-	def __first__(self, chunk):
+	@staticmethod
+	def __first__(chunk):
 		l = []
 		print('Reading files')
-		with open(f'{self.folder}.zip', 'rb') as f:
+		with open('Copy.zip', 'rb') as f:
 			while True:
 				a = f.read(chunk)
 				if not a:
 					break
 				l.append(str(a.hex())+'\n')
-				# l.append(int.from_bytes(a, byteorder='little'))
 		return l
 
-	def __second__(self, a):
-		l = [list(t) for t in zip(*a)]
-		remove(f'{self.folder}.zip')
-		if not path.exists(f'{self.folder}-copy'):
-			makedirs(f'{self.folder}-copy')
+	@staticmethod
+	def __second__(a):
 		print('Parsing e')
-		# o = ''
-		# for ii in range(len(l[1])):
-		# 	x = l[1][ii]
-		# 	# if ii % 10:
-		# 	print(f'{ii}/{len(l[1])}')
-
-		# print(len(l[1][0]))
-		# sleep(10)
-
-		# o = ''.join([str(x) + '\n' for x in l[1]])
+		l = [list(t) for t in zip(*a)]
+		remove('Copy.zip')
+		if not path.exists('Temp'):
+			makedirs('Temp')
 		print('Writing e')
-		with open(f'{self.folder}-copy/e', 'w') as f:
+		with open(f'Temp/e', 'w') as f:
 			f.writelines(l[1])
-		cc = Cypher('')
-		cc.encrypted = [l[0]]
+		cc = Cypher(l[0])
+		# cc.encrypted = [l[0]]
 		return cc
-
-	def read_file(self):
-		with open(f'{self.folder}-copy/e', 'r') as f:
-			l = [x.replace('\n', '') for x in f.readlines()]
-		return l
-
-	def get_file(self, a):
-		with open(f'{self.folder}-copy.zip', 'wb') as f:
-			# for y in [x.to_bytes((max(a).bit_length() + 7) // 8, byteorder='little') for x in a]:
-			f.write(a)
 
 
 class Cypher:
-	original_text = ''
-	# text = ''
 	encrypted = []
-	decrypted = ''
-	chunk_size = 1
+	to_ascii = False
 
-	def __init__(self, text, rows=0):
-		if not str(text).isdigit():
-			text = [ord(x) for x in text]
-		self.encrypted = [[int(x) for x in text]]
-		self.original_text = text
+	def __init__(self, cypher_list=None, rows=0, is_it_chars=False):
+		if not cypher_list or len(cypher_list) == 0:
+			self.encrypted = []
+			return
+		mode = 0
+		if type(cypher_list) is list:
+			mode = 1
+			if type(cypher_list[0]) is list:
+				mode = 2
+		if mode == 0:
+			self.encrypted = [x for x in cypher_list]
+		else:
+			self.encrypted = cypher_list
+		if is_it_chars:
+			self.encrypted = [ord(y) for y in self.encrypted]
+			self.to_ascii = True
+		if mode < 2:
+			self.encrypted = [self.encrypted]
 		if rows > 0:
 			self.add_lines(rows)
 
@@ -159,37 +153,20 @@ class Cypher:
 				print(s.format(item), end=" ")
 			print("")
 
-	@staticmethod
-	def decrypt_file(l, ascii_char=True, lists=False):
-		cypher = l
-		out = cypher
-		for i in range(len(cypher) - 1):
-			out = list(zip(cypher[i], cypher[i + 1]))
-			out.sort()
-			cypher[i + 1] = [x[1] for x in out]
-		if ascii_char:
-			l = [chr(x[1]) for x in out]
-		else:
-			l = [str(x[1]) for x in out]
-		if not lists:
-			l = ''.join(l)
-		return l
-
-	def decrypt(self, ascii_char=True, lists=False):
+	def decrypt(self, return_list=False):
 		cypher = self.encrypted[:]
 		out = cypher
 		for i in range(len(cypher) - 1):
 			out = list(zip(cypher[i], cypher[i + 1]))
 			out.sort()
 			cypher[i + 1] = [x[1] for x in out]
-		if ascii_char:
-			self.decrypted = [chr(x[1]) for x in out]
+		if self.to_ascii:
+			out = [chr(x[1]) for x in out]
 		else:
-			# print(out)
-			self.decrypted = [str(x[1]) for x in out]
-		if not lists:
-			self.decrypted = ''.join(self.decrypted)
-		return self.decrypted
+			out = [str(x[1]) for x in out]
+		if not return_list:
+			out = ''.join(out)
+		return out
 
 	@staticmethod
 	def __add_line__(t):
