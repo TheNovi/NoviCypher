@@ -39,6 +39,7 @@ class FileCypher:
 			print(f"Can't delete {self.folder}-copy folder")
 		move(f'{self.folder}.zip', f'{self.folder}.ncy')
 
+	# noinspection PyTypeChecker
 	def decrypt_file(self, folder):
 		print('Unpacking')
 		unpack_archive(f'{folder}.ncy', folder+'-copy', 'zip')
