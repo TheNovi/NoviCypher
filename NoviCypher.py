@@ -4,16 +4,17 @@ from os import remove, path, makedirs
 
 
 class FileCypher:
-	def __init__(self, folder, rows=49, output_name='out.zip', chunk=2**8):
+	def __init__(self, folder, rows=199, chunk=2**15):
 		print('start')
 		if len(folder) == 0:
 			return
 		self.folder = folder
-		self.output_name = output_name
 		make_archive(folder, 'zip', folder)
 		print('Loading file')
 		a = self.__first__(chunk)
 		print('Ziping for cypher')
+		self.check = a
+		print(f'Cypher is {len(a)}')
 		a = [x for x in zip(range(len(a)), a)]
 		shuffle(a)
 		print('Second')
@@ -35,7 +36,7 @@ class FileCypher:
 		try:
 			rmtree(f'{self.folder}-copy')
 		except:
-			print("fuck windows")
+			print(f"Can't delete {self.folder}-copy folder")
 		move(f'{self.folder}.zip', f'{self.folder}.ncy')
 
 	def decrypt_file(self, folder):
@@ -61,14 +62,14 @@ class FileCypher:
 			out = list(zip(cypher[i], cypher[i + 1]))
 			out.sort()
 			cypher[i + 1] = [x[1] for x in out]
-		a = [int(x[1]) for x in out]
+		a = [bytes.fromhex(x[1]) for x in out]
 		print('Crating deciphered zip')
-		self.get_file(a)
+		self.get_file(b''.join(a))
 		print('Removing temp files and unpacking')
 		try:
 			rmtree(f'{self.folder}-copy')
 		except:
-			print("fuck windows")
+			print(f"Can't delete {self.folder}-copy folder")
 		unpack_archive(f'{folder}-copy.zip', folder + '-decrypted', 'zip')
 		remove(f'{folder}-copy.zip')
 		print("Done (Don't forget to clear your trash bin after deleting deciphered folder)")
@@ -81,8 +82,8 @@ class FileCypher:
 				a = f.read(chunk)
 				if not a:
 					break
-				# l.append(a)
-				l.append(int.from_bytes(a, byteorder='little'))
+				l.append(str(a.hex())+'\n')
+				# l.append(int.from_bytes(a, byteorder='little'))
 		return l
 
 	def __second__(self, a):
@@ -100,10 +101,10 @@ class FileCypher:
 		# print(len(l[1][0]))
 		# sleep(10)
 
-		o = ''.join([str(x) + '\n' for x in l[1]])
+		# o = ''.join([str(x) + '\n' for x in l[1]])
 		print('Writing e')
 		with open(f'{self.folder}-copy/e', 'w') as f:
-			f.write(o)
+			f.writelines(l[1])
 		cc = Cypher('')
 		cc.encrypted = [l[0]]
 		return cc
@@ -111,12 +112,12 @@ class FileCypher:
 	def read_file(self):
 		with open(f'{self.folder}-copy/e', 'r') as f:
 			l = [x.replace('\n', '') for x in f.readlines()]
-		return [int(x) for x in l]
+		return l
 
 	def get_file(self, a):
 		with open(f'{self.folder}-copy.zip', 'wb') as f:
-			for y in [x.to_bytes((max(a).bit_length() + 7) // 8, byteorder='little') for x in a]:
-				f.write(y)
+			# for y in [x.to_bytes((max(a).bit_length() + 7) // 8, byteorder='little') for x in a]:
+			f.write(a)
 
 
 class Cypher:
