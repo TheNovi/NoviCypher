@@ -4,8 +4,12 @@ from os import remove, path, makedirs
 
 
 class FileCypher:  # todo automatic chunk size
-	def __init__(self, folder, rows=2, output_name='o', chunk=2**15):
+	def __init__(self, folder, rows=2, output_name='o', chunk=15):
 		print('Starting encoding')
+		chunk = 2 ** chunk
+		if chunk < 1:
+			print("Minimum chunk is 1 (Actual chunk is '2**chunk')")
+			return
 		rows -= 1
 		if rows < 1:
 			print("Minimum rows is 2")
@@ -170,7 +174,20 @@ class Cypher:
 
 	@staticmethod
 	def __add_line__(t):
-		o = list(zip([x for x in range(len(t))], t))
-		shuffle(o)
-		out = [list(x) for x in zip(*o)]
-		return out
+		t = list(zip([x for x in range(len(t))], t))
+		shuffle(t)
+
+		last = 0
+		index = 0
+		l = []
+		out = t[:]
+		for i in range(len(t)):
+			xx = [x for x in t if x[0] == i]
+			for x in xx:
+				i = t.index(x)
+				if last > i:
+					l.append([i, last])
+					index += 1
+				last = i
+				out[i] = (index, x[1])
+		return [list(x) for x in zip(*t)]
