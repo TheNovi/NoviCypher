@@ -56,7 +56,6 @@ class FileCypher:  # todo automatic chunk size
 		print('Unpacking')
 		unpack_archive(f'{folder}.ncy', 'Temp', 'zip')
 		a = []
-		# self.folder = folder
 		print('Reading cy')
 		with open('Temp/cy', 'r') as f:
 			l = [x.replace('\n', '').split(' ') for x in f.readlines()]
@@ -105,7 +104,6 @@ class FileCypher:  # todo automatic chunk size
 		with open(f'Temp/e', 'w') as f:
 			f.writelines(l[1])
 		cc = Cypher(l[0])
-		# cc.encrypted = [l[0]]
 		return cc
 
 
@@ -152,17 +150,26 @@ class Cypher:
 
 	def print_table(self):
 		s = "{:" + str(len(str(max(self.encrypted[0] + self.encrypted[-1])))) + "}"
-		for row in self.encrypted:
-			for item in row:
-				print(s.format(item), end=" ")
+		if self.to_ascii:
+			for row in self.encrypted[:-1]:
+				for item in row:
+					print(s.format(item), end=" ")
+				print('')
+			for item in self.encrypted[-1]:
+				print(s.format('  ' + chr(item)), end=' ')
 			print("")
+		else:
+			for row in self.encrypted:
+				for item in row:
+					print(s.format(item), end=" ")
+				print("")
 
 	def decrypt(self, return_list=False):
 		cypher = self.encrypted[:]
 		out = cypher
 		for i in range(len(cypher) - 1):
 			out = list(zip(cypher[i], cypher[i + 1]))
-			out.sort()
+			out = list(sorted(out, key=lambda x: x[0]))
 			cypher[i + 1] = [x[1] for x in out]
 		if self.to_ascii:
 			out = [chr(x[1]) for x in out]
@@ -173,14 +180,14 @@ class Cypher:
 		return out
 
 	@staticmethod
-	def __add_line__(t):
+	def __add_line__(t):  # todo optimalization
 		t = list(zip([x for x in range(len(t))], t))
 		shuffle(t)
-
 		last = 0
 		index = 0
 		l = []
 		out = t[:]
+		# print('1')
 		for i in range(len(t)):
 			xx = [x for x in t if x[0] == i]
 			for x in xx:
@@ -190,4 +197,5 @@ class Cypher:
 					index += 1
 				last = i
 				out[i] = (index, x[1])
-		return [list(x) for x in zip(*t)]
+		# print('2')
+		return [list(x) for x in zip(*out)]
