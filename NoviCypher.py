@@ -4,7 +4,7 @@ from os import remove, path, makedirs
 
 
 class FileCypher:  # todo automatic chunk size
-	def __init__(self, folder, rows=2, output_name='o', chunk=15):
+	def __init__(self, folder, rows=2, output_name='o', chunk=15, key=None):
 		print('Starting encoding')
 		chunk = 2 ** chunk
 		if chunk < 1:
@@ -25,11 +25,10 @@ class FileCypher:  # todo automatic chunk size
 		print(f'Cypher is {len(a)}')
 		a = [x for x in zip(range(len(a)), a)]
 		shuffle(a)
-		self.ncy = self.__second__(a)
-		print('Adding rows')
-		if rows > 0:
-			self.ncy.add_lines(rows)
-
+		print('Creating cypher')
+		self.ncy = Cypher(self.__second__(a), rows=rows, key=key)
+		# if rows > 0:
+		# 	self.ncy.add_lines(rows)
 		print('Saving')
 		self.save_and_zip(output_name)
 		print('Done\n')
@@ -48,7 +47,7 @@ class FileCypher:  # todo automatic chunk size
 		print('Saved to ' + path.abspath(f'{self.folder}../{o}.ncy'))
 
 	@staticmethod
-	def decrypt_file(folder):
+	def decrypt_file(folder, key=None):
 		print('Starting decoding')
 		if not path.exists(f'{folder}.ncy'):
 			print("Cant find .ncy file")
@@ -62,13 +61,13 @@ class FileCypher:  # todo automatic chunk size
 		for x in l:
 			a.append([int(y) for y in x])
 		print('Deciphering cy')
-		a = [int(x) for x in Cypher(a).decrypt(True)]
+		a = [int(x) for x in Cypher(a, key=key, decode=True).decrypt(True)]
 		print('Reading e')
 		with open('Temp/e', 'r') as f:
 			l = [x.replace('\n', '') for x in f.readlines()]
 		a = [a, l]
 		print('Deciphering e')
-		a = [bytes.fromhex(x) for x in Cypher(a).decrypt(True)]
+		a = [bytes.fromhex(x) for x in Cypher(a, decode=True).decrypt(True)]
 		print('Creating deciphered zip')
 		with open('Copy.zip', 'wb') as f:
 			f.write(b''.join(a))
@@ -77,9 +76,15 @@ class FileCypher:  # todo automatic chunk size
 			rmtree('Temp')
 		except:
 			print("Can't delete Temp folder")
-		unpack_archive('Copy.zip', folder + '-dec', 'zip')
+		try:
+			unpack_archive('Copy.zip', folder + '-dec', 'zip')
+		except:
+			print("!!!! Can't decipher file. Maybe wrong key. !!!!")
+			remove('Copy.zip')
+			return False
 		remove('Copy.zip')
 		print("Done (Don't forget to clear your trash bin after deleting deciphered folder)")
+		return True
 
 	@staticmethod
 	def __first__(chunk):
@@ -103,16 +108,16 @@ class FileCypher:  # todo automatic chunk size
 		print('Writing e')
 		with open(f'Temp/e', 'w') as f:
 			f.writelines(l[1])
-		cc = Cypher(l[0])
-		return cc
+		return l[0]
 
 
 class Cypher:
 	encrypted = []
 	to_ascii = False
+	key = False
 
-	def __init__(self, cypher_list=None, rows=0, is_it_chars=False):
-		if not cypher_list or len(cypher_list) == 0:
+	def __init__(self, cypher_list=None, rows=0, is_it_chars=False, key=None, decode=False):
+		if cypher_list in [False, None] or len(cypher_list) == 0:
 			self.encrypted = []
 			return
 		mode = 0
@@ -125,12 +130,34 @@ class Cypher:
 		else:
 			self.encrypted = cypher_list
 		if is_it_chars:
-			self.encrypted = [ord(y) for y in self.encrypted]
+			self.encrypted = [ord(y) - 32 for y in self.encrypted]
 			self.to_ascii = True
 		if mode < 2:
 			self.encrypted = [self.encrypted]
 		if rows > 0:
 			self.add_lines(rows)
+		if key not in [None, False] and len(key) > 0:  # todo better handling
+			self.key = [int(x) for x in key]
+			if not decode:
+				self.__enc_key__()
+
+	def __enc_key__(self):
+		yek = self.key[:]
+		yek.reverse()
+		for k_i in yek:
+			tmp = list(zip(range(len(self.encrypted)), [x.copy() for x in self.encrypted]))  # zip[1]
+			tmp_sorted = list(sorted([x[:] for x in tmp], key=lambda x: x[1][k_i]))
+			for i in range(len(tmp_sorted)):
+				tmp[tmp.index([x for x in tmp if x[0] == tmp_sorted[i][0]][0])][1][k_i + 1:] = self.encrypted[i][k_i + 1:]
+			self.encrypted = [x[1] for x in tmp]  # tmp
+
+	def __dec_key__(self):
+		tmp = [x.copy() for x in self.encrypted]
+		for k_i in self.key:
+			tmp_sorted = list(sorted([x.copy() for x in tmp], key=lambda x: x[k_i]))
+			for i in range(len(tmp_sorted)):
+				tmp[i][k_i + 1:] = tmp_sorted[i][k_i + 1:]
+		return tmp
 
 	def add_lines(self, rows=1):
 		out = [[x for x in self.encrypted.pop(0)]]
@@ -156,7 +183,7 @@ class Cypher:
 					print(s.format(item), end=" ")
 				print('')
 			for item in self.encrypted[-1]:
-				print(s.format('  ' + chr(item)), end=' ')
+				print(s.format(f' {chr(item + 32)}'), end=' ')
 			print("")
 		else:
 			for row in self.encrypted:
@@ -165,14 +192,17 @@ class Cypher:
 				print("")
 
 	def decrypt(self, return_list=False):
-		cypher = self.encrypted[:]
+		if self.key not in [None, False] and len(self.key) > 0:
+			cypher = self.__dec_key__()
+		else:
+			cypher = [x.copy() for x in self.encrypted]
 		out = cypher
 		for i in range(len(cypher) - 1):
 			out = list(zip(cypher[i], cypher[i + 1]))
 			out = list(sorted(out, key=lambda x: x[0]))
 			cypher[i + 1] = [x[1] for x in out]
 		if self.to_ascii:
-			out = [chr(x[1]) for x in out]
+			out = [chr(x[1] + 32) for x in out]
 		else:
 			out = [str(x[1]) for x in out]
 		if not return_list:
