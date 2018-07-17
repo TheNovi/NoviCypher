@@ -4,9 +4,9 @@ from os import remove, path, makedirs
 
 
 class FileCypher:  # todo automatic chunk size
-	def __init__(self, folder, rows=2, output_name='o', chunk=15, key=None):
+	def __init__(self, folder, rows=2, output_name='o', chunk=500, key=None):
 		print('Starting encoding')
-		chunk = 2 ** chunk
+		# chunk = 2 ** chunk
 		if chunk < 1:
 			print("Minimum chunk is 1 (Actual chunk is '2**chunk')")
 			return
@@ -21,6 +21,8 @@ class FileCypher:  # todo automatic chunk size
 		print('Ziping for cypher')
 		make_archive('Copy', 'zip', folder)
 		print('Loading file')
+		chunk = int(path.getsize('Copy.zip') / chunk)
+		print(f"Chunk is {chunk}")
 		a = self.__first__(chunk)
 		print(f'Cypher is {len(a)}')
 		a = [x for x in zip(range(len(a)), a)]

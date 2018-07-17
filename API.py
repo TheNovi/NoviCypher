@@ -17,7 +17,7 @@ arg = sys.argv
 len_argv = len(arg)
 if len_argv > 1:
 	if arg[1] in ['-h', '--help']:
-		print(f"folder/File rows chunk")
+		print(f"folder/File rows Cypher_size")
 		quit()
 	a = arg[1]
 else:
@@ -39,7 +39,7 @@ elif path.isdir(a):
 	if len_argv > 3:
 		chunk = arg[3]
 	else:
-		chunk = input('chunk >')
+		chunk = input('Cypher size >')
 	encode(a, int(row), key, int(chunk))
 else:
 	print("Unknown path")
