@@ -3,7 +3,10 @@ from shutil import make_archive, unpack_archive, rmtree, move
 from os import remove, path, makedirs
 
 
-class FileCypher:  # todo automatic chunk size
+Version = '1.0.0b'
+
+
+class FileCypher:
 	def __init__(self, folder, rows=2, output_name='o', chunk=500, key=None):
 		print('Starting encoding')
 		# chunk = 2 ** chunk
@@ -139,7 +142,7 @@ class Cypher:
 		if rows > 0:
 			self.add_lines(rows)
 		if key not in [None, False] and len(key) > 0:  # todo better handling
-			self.key = [int(x) for x in key]
+			self.key = [int(x) for x in key.split(' ')]
 			if not decode:
 				self.__enc_key__()
 

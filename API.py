@@ -3,14 +3,19 @@ from os import path
 import sys
 
 
+Version = '1.0.0b'
+
+
 def encode(p, r, k, c):
 	print(f"encoding {p}\nrows={r}\nkey={k}\nchunk={c}")
 	FileCypher(p, rows=r, chunk=c, key=k)
+	input()
 
 
 def decode(p, k):
 	print(f"Decoding {p}\nkey={k}")
-	FileCypher.decrypt_file(p, k)
+	if not FileCypher.decrypt_file(p, k):
+		input()
 
 
 arg = sys.argv
@@ -43,4 +48,3 @@ elif path.isdir(a):
 	encode(a, int(row), key, int(chunk))
 else:
 	print("Unknown path")
-input()
