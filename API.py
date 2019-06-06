@@ -3,7 +3,7 @@ from os import path
 import sys
 
 
-Version = '1.0.0b'
+VERSION = '1.0b'
 
 
 def encode(p, r, k, c):

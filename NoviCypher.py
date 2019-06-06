@@ -3,7 +3,7 @@ from shutil import make_archive, unpack_archive, rmtree, move
 from os import remove, path, makedirs
 
 
-Version = '1.0.0b'
+VERSION = '1.0b'
 
 
 class FileCypher:
@@ -21,7 +21,7 @@ class FileCypher:
 			print("Folder doesn't exist")
 			return
 		self.folder = folder
-		print('Ziping for cypher')
+		print('Zipping for cypher')
 		make_archive('Copy', 'zip', folder)
 		print('Loading file')
 		chunk = int(path.getsize('Copy.zip') / chunk)
@@ -117,14 +117,14 @@ class FileCypher:
 
 
 class Cypher:
-	encrypted = []
-	to_ascii = False
-	key = False
 
 	def __init__(self, cypher_list=None, rows=0, is_it_chars=False, key=None, decode=False):
 		if cypher_list in [False, None] or len(cypher_list) == 0:
 			self.encrypted = []
 			return
+		self.encrypted = []
+		self.to_ascii = False
+		self.key = False
 		mode = 0
 		if type(cypher_list) is list:
 			mode = 1
@@ -215,7 +215,7 @@ class Cypher:
 		return out
 
 	@staticmethod
-	def __add_line__(t):  # todo optimalization
+	def __add_line__(t):  # todo optimize
 		t = list(zip([x for x in range(len(t))], t))
 		shuffle(t)
 		last = 0
